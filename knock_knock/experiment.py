@@ -37,13 +37,13 @@ class ColorGroupCycler:
         groups_20b = [bokeh.palettes.Category20b_20[start:start + 3] for start in starts_20b]
 
         self.all_groups = (groups_20c + groups_20b)
-        
+
     def __getitem__(self, key):
         group_num, replicate = key
         group = self.all_groups[group_num % len(self.all_groups)]
         color = group[replicate % len(group)]
         return color
-    
+
 color_groups = ColorGroupCycler()
 
 def extract_color(description):
@@ -56,7 +56,7 @@ def extract_color(description):
         color = color_groups[num, replicate]
 
     return color
-        
+
 def ensure_list(possibly_list):
     if isinstance(possibly_list, list):
         definitely_list = possibly_list
@@ -116,7 +116,7 @@ class Experiment:
             'lengths': self.results_dir / 'lengths.txt',
             'lengths_figure': self.results_dir / 'all_lengths.png',
 
-            'donor_microhomology_lengths': self.results_dir / 'donor_microhomology_lengths.txt', 
+            'donor_microhomology_lengths': self.results_dir / 'donor_microhomology_lengths.txt',
 
             'length_ranges_dir': self.results_dir / 'length_ranges',
             'outcome_browser': self.results_dir / 'outcome_browser.html',
@@ -128,10 +128,10 @@ class Experiment:
             return self.fns['length_ranges_dir'] / f'{start}_{end}.png'
 
         self.fns['length_range_figure'] = make_length_range_fig_fn
-        
+
         self.color = extract_color(self.description)
         self.max_qual = 93
-        
+
         index_names = self.description.get('supplemental_indices')
 
         if index_names is None:
@@ -170,7 +170,7 @@ class Experiment:
 
     @memoized_property
     def results_dir(self):
-        d = self.base_dir / 'results' 
+        d = self.base_dir / 'results'
 
         if isinstance(self.batch, tuple):
             for level in self.batch:
@@ -211,6 +211,9 @@ class Experiment:
                                     min_relevant_length=self.min_relevant_length,
                                    )
 
+        print(it)
+        print("above")
+        exit()
         return ti
 
     @memoized_property
@@ -241,7 +244,7 @@ class Experiment:
 
             fns['bam'][read_type] = self.results_dir / f'{read_type}_combined_alignments.bam'
             fns['bam_by_name'][read_type] = self.results_dir / f'{read_type}_combined_alignments.by_name.bam'
-        
+
         return fns
 
     def outcome_fns(self, outcome):
@@ -291,11 +294,11 @@ class Experiment:
             reads = fastq.reads(fn_source, up_to_space=True)
 
         return reads
-    
+
     @memoized_property
     def read_lengths(self):
         return np.loadtxt(self.fns['lengths'], dtype=int)
-    
+
     def generate_read_lengths(self):
         if len(self.outcome_stratified_lengths) == 0:
             lengths = []
@@ -310,7 +313,7 @@ class Experiment:
 
         with open(counts_fn, 'w') as fh:
             for fn_key, metadata_lines in self.outcome_metadata():
-                fh.write(f'# Metadata from {fn_key}:\n') 
+                fh.write(f'# Metadata from {fn_key}:\n')
                 for line in metadata_lines:
                     fh.write(line)
 
@@ -345,7 +348,7 @@ class Experiment:
         nonzero, = np.nonzero(lengths)
         ranges = [(i, i) for i in nonzero]
         return pd.DataFrame(ranges, columns=['start', 'end'])
-    
+
     def alignment_groups(self, fn_key='bam_by_name', outcome=None, read_type=None):
         if read_type is None:
             read_type = self.default_read_type
@@ -374,7 +377,7 @@ class Experiment:
     def query_names(self, read_type=None):
         for qname, als in self.alignment_groups(read_type=read_type):
             yield qname
-    
+
     def generate_alignments(self, read_type=None):
         if read_type is None:
             read_type = self.default_read_type
@@ -421,10 +424,10 @@ class Experiment:
         for fn in bam_fns:
             fn.unlink()
             fn.with_suffix('.bam.bai').unlink()
-        
+
         for fn in bam_by_name_fns:
             fn.unlink()
-    
+
     def generate_supplemental_alignments_with_STAR(self, read_type=None, min_length=None):
         for index_name in self.supplemental_indices:
             if not self.silent:
@@ -592,7 +595,7 @@ class Experiment:
                 qnames = fn.read_text().splitlines()
                 all_qnames.extend(qnames)
         return all_qnames
-    
+
     def record_sanitized_category_names(self):
         sanitized_to_original = {}
         for cat, subcats in self.categorizer.category_order:
@@ -602,7 +605,7 @@ class Experiment:
                 outcome = (cat, subcat)
                 sanitized_string = self.categorizer.outcome_to_sanitized_string(outcome)
                 sanitized_to_original[sanitized_string] = ', '.join(outcome)
-        
+
         with open(self.fns['sanitized_category_names'], 'w') as fh:
             for k, v in sorted(sanitized_to_original.items()):
                 fh.write(f'{k}\t{v}\n')
@@ -612,7 +615,7 @@ class Experiment:
 
         if self.fns['outcomes_dir'].is_dir():
             shutil.rmtree(str(self.fns['outcomes_dir']))
-           
+
         self.fns['outcomes_dir'].mkdir()
 
         outcomes = defaultdict(list)
@@ -644,7 +647,7 @@ class Experiment:
                 except:
                     print(self.sample_name, name)
                     raise
-                
+
                 outcomes[layout.category, layout.subcategory].append(name)
 
                 outcome = self.final_Outcome.from_layout(layout)
@@ -672,12 +675,12 @@ class Experiment:
             outcome_fns['dir'].mkdir()
 
             alignment_sorters[outcome] = outcome_fns['bam_by_name'][read_type]
-            
+
             with outcome_fns['query_names'].open('w') as fh:
                 for qname in qnames:
                     qname_to_outcome[qname] = outcome
                     fh.write(qname + '\n')
-        
+
         with alignment_sorters:
             saved_verbosity = pysam.set_verbosity(0)
             with pysam.AlignmentFile(full_bam_fn) as full_bam_fh:
@@ -807,14 +810,14 @@ class Experiment:
                 line_width = 2
 
             ax.plot(ys, color=color, alpha=alpha, linewidth=line_width, label=label)
-            
+
             nonzero_xs = ys.to_numpy().nonzero()[0]
             nonzero_ys = ys[nonzero_xs]
-            
+
             # Don't mark nonzero points if any smoothing was done.
             if self.length_plot_smooth_window == 0 and label != 'all other reads':
                 ax.scatter(nonzero_xs, nonzero_ys, s=2, c=color, alpha=alpha)
-                           
+
         if show_ranges:
             for _, (start, end) in self.length_ranges.iterrows():
                 if sum(ys_to_check[start:end + 1]) > 0:
@@ -825,13 +828,13 @@ class Experiment:
                                edgecolor='black',
                                zorder=100,
                               )
-            
+
         y_lims = (0, max_y * 1.05)
         ax.set_ylim(*y_lims)
 
         x_max = int(max_relevant_length * 1.005)
         ax.set_xlim(0, x_max)
-        
+
         if show_title:
             if outcome is None:
                 title = f'{self.batch}: {self.name}'
@@ -840,11 +843,11 @@ class Experiment:
                 title = f'{self.batch}: {self.name}\n{category}: {subcategory}'
 
             ax.set_title(title)
-            
+
         if outcome is not None:
             # No need to draw legend if only showing all reads
             ax.legend(framealpha=0.5)
-        
+
         for i, (name, length) in enumerate(self.expected_lengths.items()):
             y = 1 + 0.02  + 0.04 * i
             ax.axvline(length, ymin=0, ymax=y, color='black', alpha=0.4, clip_on=False)
@@ -855,7 +858,7 @@ class Experiment:
                         ha='center', va='bottom',
                         size=10,
                        )
-        
+
         main_ticks = list(range(0, max_relevant_length, x_tick_multiple))
         main_tick_labels = [f'{x:,}' for x in main_ticks]
 
@@ -868,7 +871,7 @@ class Experiment:
 
         ax.set_xticks(main_ticks + extra_ticks)
         ax.set_xticklabels(main_tick_labels + extra_tick_labels)
-        
+
         minor = [x for x in np.arange(0, x_max, x_tick_multiple // 2) if x % x_tick_multiple != 0]
         ax.set_xticks(minor, minor=True)
 
@@ -972,7 +975,7 @@ class Experiment:
 
     @memoized_property
     def outcome_to_color(self):
-        # To minimize the chance that a color will be used more than once in the same panel in 
+        # To minimize the chance that a color will be used more than once in the same panel in
         # outcome_stratified_lengths plots, sort color order by highest point.
         # Factored out here so that same colors can be used in svgs.
         color_order = sorted(self.categories_by_frequency, key=self.outcome_highest_points.get, reverse=True)
@@ -1014,13 +1017,13 @@ class Experiment:
                     group.append(outcome)
                 else:
                     still_left.append(outcome)
-                    
+
             if len(group) > 0:
                 panel_groups.append((current_max, group))
-                
+
             if len(still_left) == 0:
                 break
-                
+
             current_max = current_max * zoom_factor
             left_after_previous = still_left
 
@@ -1216,7 +1219,7 @@ class Experiment:
                                 gid=f'help_message_bracket_{panel_i + 1}',
                             )
 
-            inverted_fig_tranform = fig.transFigure.inverted().transform    
+            inverted_fig_tranform = fig.transFigure.inverted().transform
 
             for which, top_coords, bottom_coords in (('top', params_dict['top']['top_corner'], params_dict['bottom']['top_corner']),
                                                      ('bottom', params_dict['top']['bottom_corner'], params_dict['bottom']['bottom_corner']),
@@ -1307,7 +1310,7 @@ class Experiment:
                     layout = self.categorizer(als, self.target_info, mode=self.layout_mode)
 
                 layout.categorize()
-                
+
                 only_relevant.append((qname, layout.relevant_alignments))
 
             subsample = only_relevant
@@ -1317,7 +1320,7 @@ class Experiment:
             title='',
         )
         kwargs.update(diagram_kwargs)
-        
+
         for qname, als in subsample:
             length = self.qname_to_inferred_length[qname]
             length = None
@@ -1333,7 +1336,7 @@ class Experiment:
             except:
                 print(als[0].query_name)
                 raise
-                
+
             yield d
 
     def generate_length_range_figures(self, specific_outcome=None, num_examples=1):
@@ -1353,7 +1356,7 @@ class Experiment:
             fns = self.outcome_fns(specific_outcome)
 
         fig_dir = fns['length_ranges_dir']
-            
+
         if fig_dir.is_dir():
             shutil.rmtree(str(fig_dir))
 
@@ -1395,7 +1398,7 @@ class Experiment:
         al_groups = self.alignment_groups(outcome=outcome)
         diagrams = self.alignment_groups_to_diagrams(al_groups, num_examples=num_examples)
         return diagrams
-        
+
     def generate_outcome_example_figures(self, outcome, num_examples, **kwargs):
         if isinstance(outcome, tuple):
             description = ': '.join(outcome)
@@ -1409,7 +1412,7 @@ class Experiment:
             return tag
 
         diagrams = self.example_diagrams(outcome, num_examples)
-        
+
         outcome_fns = self.outcome_fns(outcome)
         outcome_dir = outcome_fns['dir']
         if not outcome_dir.is_dir():
@@ -1448,12 +1451,12 @@ class Experiment:
                 '''))
             fh.write(f'<h2>{self.batch}: {self.sample_name}</h1>\n')
             fh.write(f'<h2>{description}</h2>\n')
-            
+
             fig = self.length_distribution_figure(outcome=outcome)
             if fig is not None:
                 tag = fig_to_img_tag(fig)
                 fh.write(f'{tag}\n<hr>\n')
-                
+
             for i, diagram in enumerate(self.progress(diagrams, desc=description, total=num_examples, leave=False)):
                 if i == 0:
                     diagram.fig.savefig(outcome_fns['first_example'], bbox_inches='tight')
@@ -1470,7 +1473,7 @@ class Experiment:
         subcategories = sorted(self.categories_by_frequency)
         for outcome in self.progress(subcategories, desc='Making diagrams for detailed subcategories'):
             self.generate_outcome_example_figures(outcome=outcome, num_examples=num_examples, **kwargs)
-        
+
     def explore(self, by_outcome=True, **kwargs):
         explorer = explore.SingleExperimentExplorer(self, by_outcome, **kwargs)
         return explorer.layout
@@ -1508,7 +1511,7 @@ class Experiment:
                 strand = integration.donor_strand
                 category_and_sides.append((f'donor fragment, {strand}, 5\' junction', 5))
                 category_and_sides.append((f'donor fragment, {strand}, 3\' junction', 3))
-                
+
             if len(category_and_sides) > 0:
                 integration = outcome_record.Integration.from_string(outcome.details)
                 junctions = {
@@ -1706,7 +1709,7 @@ def get_all_experiments(base_dir, conditions=None, as_dictionary=True, progress=
         else:
             vs = v
         batches = (n for n in batches if n in vs)
-    
+
     for batch in batches:
         sample_sheet = load_sample_sheet(base_dir, batch)
 
@@ -1719,7 +1722,7 @@ def get_all_experiments(base_dir, conditions=None, as_dictionary=True, progress=
                 continue
 
             exp_class = get_exp_class(description.get('platform'))
-            
+
             exp = exp_class(base_dir, batch, name, description=description, progress=progress)
             exps.append(exp)
 
@@ -1731,7 +1734,7 @@ def get_all_experiments(base_dir, conditions=None, as_dictionary=True, progress=
         d = {}
         for exp in filtered:
             d[exp.batch, exp.sample_name] = exp
-        
+
         filtered = d
 
     return filtered

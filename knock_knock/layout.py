@@ -1257,8 +1257,6 @@ class Layout(Categorizer):
         primer_als = self.primer_alignments
         ref_seqs = self.target_info.reference_sequences
 
-        print(self.target_info)
-        exit()
         if len(self.target_info.sgRNAs) <= 1:
             if primer_als[5] is not None and primer_als[3] is not None:
                 merged = sam.merge_adjacent_alignments(primer_als[5], primer_als[3], ref_seqs)
