@@ -22,7 +22,7 @@ Pillow = "^9.4.0"
 pysam = "^0.20.0"
 PyYAML = "^6.0"
 tqdm = "^4.64.1"
-hits-x = "^0.1.1"
+hits-x = "^0.1.2"
 
 [tool.poetry.scripts]
 knock-knock = 'knock_knock.knock:main'
