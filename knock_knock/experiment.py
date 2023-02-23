@@ -211,7 +211,7 @@ class Experiment:
                                     min_relevant_length=self.min_relevant_length,
                                    )
 
-        print(it)
+        print(ti)
         print("above")
         exit()
         return ti
