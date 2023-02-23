@@ -500,14 +500,14 @@ numpy = ">=1.14.5"
 
 [[package]]
 name = "hits-x"
-version = "0.1.2"
+version = "0.1.3"
 description = "Updated and modified from Jeff's version."
 category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "hits_x-0.1.2-py3-none-any.whl", hash = "sha256:55af1a67683be5a18be003176235319b84d7635eb8b7c47768ebe1b38e4597f0"},
-    {file = "hits_x-0.1.2.tar.gz", hash = "sha256:0ac3c76cda632bf655991c588a531ea361c79c0cd4d14ba8692ec21b4a8016cc"},
+    {file = "hits_x-0.1.3-py3-none-any.whl", hash = "sha256:27769ab2389d7d8fe4809f1eb5e63b81d03bd7f74e81a171aa801fa44d12fbce"},
+    {file = "hits_x-0.1.3.tar.gz", hash = "sha256:340a8eb303e37a01b05a9882051a71c63c68cee499d815eea675b8a4584710bc"},
 ]
 
 [package.dependencies]
@@ -2111,4 +2111,4 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "d47a11a000ebfd011ae58ac61f09598e4b525a5bba4af7a3e3215d465d88d1e4"
+content-hash = "32691d6ec1754bf4e1c7d9ecb5a870afa77c23186858b4b60d45629e6939ecfa"
