@@ -1,4 +1,5 @@
 test/
+_STARtmp/
 __pycache__/
 knock_knock.egg-info/
 build/
