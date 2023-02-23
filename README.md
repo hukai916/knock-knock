@@ -1,4 +1,6 @@
-# knock-knock 
+# knock-knock
+
+Forked and modified from Jeff's knock-knock package (https://github.com/jeffhussmann/knock-knock), v0.4.1.
 
 `knock-knock` is a tool for exploring, categorizing, and quantifying the sequence outcomes produced by genome editing experiments.
 ![](docs/example.png)
@@ -29,7 +31,7 @@ If installing with `pip`, non-Python dependencies need to be installed separatel
 `knock-knock` tries to identify the different ways that genome editing experiments can produce unintended shufflings and rearrangments of the intended editing outcome.
 In order to do this, the strategy used to align sequencing reads makes as few assumptions as possible about how the reads should look.
 Instead, it takes each amplicon sequencing read and attempts to produce a comprehensive set of local alignments between portions of the read and all relevant sequences present in the edited cell.
-Each read is then categorized by identifying a parsimonious subset of local alignments that cover the whole read and analyzing the architecture of this set of covering alignments. 
+Each read is then categorized by identifying a parsimonious subset of local alignments that cover the whole read and analyzing the architecture of this set of covering alignments.
 
 `knock-knock` supports Pacbio CCS data for longer (\~thousands of nts) amplicons and paired-end Illumina data for shorter (\~hundreds of nts) amplicons.
 
@@ -60,13 +62,13 @@ Every time knock-knock is run, this directory is given as a command line argumen
 
 Throughout this documentation, `PROJECT_DIR` will be used as a stand-in for the path to an actual project directory.
 
-knock-knock is packaged with some small example data sets for testing purposes. To install this example data to a user-specified project directory, run 
+knock-knock is packaged with some small example data sets for testing purposes. To install this example data to a user-specified project directory, run
 
 ```
 knock-knock install_example_data PROJECT_DIR
 ```
 
-After running this command, PROJECT_DIR will contain 
+After running this command, PROJECT_DIR will contain
 
 ```
 PROJECT_DIR
@@ -100,7 +102,7 @@ knock-knock provides a built-in way to download references and build indices for
 where ORGANISM is one of hg38, mm10, or e_coli, and NUM_THREADS is an optional argument that can be provided to use multiple threads for index building.
 (This can take up to several hours for mammalian-scale genomes.)
 
-Running this command for hg38 will populate `PROJECT_DIR/indices/hg38` with the following files: 
+Running this command for hg38 will populate `PROJECT_DIR/indices/hg38` with the following files:
 
 ```
 PROJECT_DIR/indices/hg38/
@@ -120,7 +122,7 @@ PROJECT_DIR/indices/hg38/
     └── hg38.mmi
 ```
 
-Alternatively, if reference genomes and indices already exist (e.g. in another project's directory), a YAML file `PROJECT_DIR/index_locations.yaml` that lists paths can be provided. 
+Alternatively, if reference genomes and indices already exist (e.g. in another project's directory), a YAML file `PROJECT_DIR/index_locations.yaml` that lists paths can be provided.
 
 ### Specifying targets
 
@@ -128,7 +130,7 @@ The next step is to provide information about which genomic location was targete
 `knock-knock` refers to the combination of a genomic location and associated homology donor as a *target*.
 Information about targets is stored in a directory called `targets` inside a project directory.
 
-Genomic location is specified by providing the name of genome targeted (which must exist in PROJECT_DIR/indices), the protospacer of the (SpCas9) sgRNA that was used for cutting, and the amplicon primers flanking the genomic location of this protospacer that were used to amplify the genomic DNA. 
+Genomic location is specified by providing the name of genome targeted (which must exist in PROJECT_DIR/indices), the protospacer of the (SpCas9) sgRNA that was used for cutting, and the amplicon primers flanking the genomic location of this protospacer that were used to amplify the genomic DNA.
 
 Targets are defined in a set of csv files inside the `targets` directory. A group of "parts-list" files `sgRNAs.csv`, `amplicon_primers.csv`, `donors.csv`, and `extra_sequences.csv` are used to register named sequences of each csv's corresponding type, and a master csv file `PROJECT_DIR/targets/targets.csv` defines each target using references to these named sequences.
 
@@ -182,7 +184,7 @@ RAB11A_PAC,GCAGTGAAGAAGCTCATTAAGACAAC;GAAGGTAGAGAGAGTTGCCAAATGG
 
 The `donor_sequence` and `nonhomologous_donor_sequence` columns of `targets.csv` should reference entries in `donors.csv`.
 Rows of `donors.csv` define named donors, with columns `name`, `donor_type`, and `donor_sequence`.
-If a donor is used in the `donor` column of a target definition, its sequence must contain two homology arms that flank the cut site of target's sgRNA. 
+If a donor is used in the `donor` column of a target definition, its sequence must contain two homology arms that flank the cut site of target's sgRNA.
 Setting `donor_type` to `plasmid` causes knock-knock to be aware that the sequence has a circular topology when processing alignments to it.
 
 
@@ -198,7 +200,7 @@ RAB11A-150HA_PCR_donor,PCR,GCCGGAAATGGCGCAGCGGCAGGGAGGGG...
 where the actual donor sequences have been truncated for display purposes.
 
 
-After filling out all target-specification csvs, run 
+After filling out all target-specification csvs, run
 ```
 knock-knock build_targets PROJECT_DIR
 ```
@@ -218,11 +220,11 @@ Every sample sheet should contain the columns:
 - `color`: an optional color to associate with this sample in visualizations. Can be an integer or any string format that matplotlib recognizes (see [here](https://matplotlib.org/3.1.0/tutorials/colors/colors.html)).
 
 The columns used to specify which fastq files belong to each sample are different for Illumina and Pacbio sequencing runs.
-In both cases, all fastq files must be located in `PROJECT_DIR/data/EXAMPLE_GROUP/` and should be given with these leading directory components removed (i.e. as would be returned by `basename`). Fastq files can be gzipped. 
- 
-Illumina sample sheets should contain columns `R1` and `R2`, which should specify R1 and R2 file names for each sample. 
+In both cases, all fastq files must be located in `PROJECT_DIR/data/EXAMPLE_GROUP/` and should be given with these leading directory components removed (i.e. as would be returned by `basename`). Fastq files can be gzipped.
 
-Pacbio sample sheets should contain column `CCS_fastq_fn`, which should specify a circular consensus sequence fastq file name for each sample. 
+Illumina sample sheets should contain columns `R1` and `R2`, which should specify R1 and R2 file names for each sample.
+
+Pacbio sample sheets should contain column `CCS_fastq_fn`, which should specify a circular consensus sequence fastq file name for each sample.
 
 As examples, the contents of `data/illumina/sample_sheet.csv` in knock-knock's example data are:
 ```
@@ -240,7 +242,7 @@ R_PCR,pacbio,RAB11A_PCR.fastq.gz,RAB11A_150nt_PCR,hg38;e_coli,6000,2
 
 ### Processing samples
 
-Once all relevant targets have been built and sample sheets filled out, process sequencing data from a single sample by running 
+Once all relevant targets have been built and sample sheets filled out, process sequencing data from a single sample by running
 
 ```
 knock-knock process PROJECT_DIR EXAMPLE_GROUP EXAMPLE_SAMPLE
@@ -253,7 +255,7 @@ knock-knock parallel PROJECT_DIR MAX_PROCS
 ```
 
 which will process all samples in all groups in PROJECT_DIR up to MAX_PROCS at a time. To process only samples from a single group,
-run 
+run
 
 ```
 knock-knock parallel PROJECT_DIR MAX_PROCS --group EXAMPLE_GROUP

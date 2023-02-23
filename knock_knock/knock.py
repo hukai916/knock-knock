@@ -156,7 +156,7 @@ def print_citation(args):
     '''
     print(textwrap.dedent(citation))
 
-if __name__ == '__main__':
+def main():
     logging.basicConfig(format='%(asctime)s: %(message)s',
                         datefmt='%y-%m-%d %H:%M:%S',
                         level=logging.INFO,

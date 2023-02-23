@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "knock-knock-x"
+version = "0.1.0"
+description = "A modified version of Jeff's knock-knock."
+authors = ["hukai916 <31452631+hukai916@users.noreply.github.com>"]
+license = "GNU General Public License v3.0"
+readme = "README.md"
+packages = [{include = "knock_knock"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+bokeh = "^3.0.3"
+biopython = "^1.81"
+h5py = "^3.8.0"
+ipywidgets = "^8.0.4"
+matplotlib = "^3.7.0"
+nbconvert = "^7.2.9"
+nbformat = "^5.7.3"
+numpy = "^1.24.2"
+pandas = "^1.5.3"
+Pillow = "^9.4.0"
+pysam = "^0.20.0"
+PyYAML = "^6.0"
+hits = "^0.3.3"
+tqdm = "^4.64.1"
+
+[tool.poetry.scripts]
+knock-knock = 'knock_knock.knock:main'
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,3 @@
+1. Must rename knock_knock/knock-knock to knock for the following to work in pyproject.toml with pip install -e .:
+  1.1 module name can not seem to contain -
+  1.2 module name must end with .py

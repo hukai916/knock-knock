@@ -1,0 +1,5 @@
+conda install -c bioconda blast=2.12.0
+conda install -c bioconda minimap2=2.24
+conda install -c bioconda samtools=1.4.1
+conda install -c bioconda star=2.7.10b
+conda install -c conda-forge parallel
