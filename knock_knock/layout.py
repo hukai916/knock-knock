@@ -39,15 +39,15 @@ class Categorizer:
         for cat, subcats in cls.category_order:
             for subcat in subcats:
                 full_index.append((cat, subcat))
-                
-        full_index = pd.MultiIndex.from_tuples(full_index) 
+
+        full_index = pd.MultiIndex.from_tuples(full_index)
 
         return full_index
-    
+
     @classmethod
     def categories(cls):
         return [c for c, scs in cls.category_order]
-    
+
     @classmethod
     def subcategories(cls):
         return dict(cls.category_order)
@@ -96,7 +96,7 @@ class Categorizer:
             return category
 
     def q_to_feature_offset(self, al, feature_name, target_info=None):
-        ''' Returns dictionary of 
+        ''' Returns dictionary of
                 {true query position: offset into feature relative to its strandedness
                  (i.e. from the start of + stranded and from the right of - stranded)
                 }
@@ -112,13 +112,13 @@ class Categorizer:
 
         ref_p_to_feature_offset = target_info.ref_p_to_feature_offset(al.reference_name, feature_name)
         seq = target_info.reference_sequences[al.reference_name]
-        
+
         q_to_feature_offset = {}
-        
+
         for q, read_b, ref_p, ref_b, qual in sam.aligned_tuples(al, seq):
             if q is not None and ref_p in ref_p_to_feature_offset:
                 q_to_feature_offset[q] = ref_p_to_feature_offset[ref_p]
-                
+
         return q_to_feature_offset
 
     def feature_offset_to_q(self, al, feature_name, target_info=None):
@@ -139,10 +139,10 @@ class Categorizer:
         '''
         if first_al is None or second_al is None:
             return False
-        
+
         first_q_to_offsets = self.q_to_feature_offset(first_al, first_feature_name)
         second_q_to_offsets = self.q_to_feature_offset(second_al, second_feature_name)
-        
+
         share_any = any(second_q_to_offsets.get(q) == offset for q, offset in first_q_to_offsets.items())
 
         return share_any
@@ -152,7 +152,7 @@ class Categorizer:
                                                    right_al, right_feature_name,
                                                   ):
         ti = self.target_info
-        
+
         results = None
 
         if self.share_feature(left_al, left_feature_name, right_al, right_feature_name):
@@ -162,24 +162,24 @@ class Categorizer:
                                                               ti.reference_sequences[right_al.reference_name],
                                                               min,
                                                              )
-                                                        
+
             # Does an optimal switch point occur somewhere in the shared feature?
 
             switch_interval = interval.Interval(min(switch_results['best_switch_points']), max(switch_results['best_switch_points']))
-            
+
             left_qs = self.q_to_feature_offset(left_al, left_feature_name)
-            left_feature_interval = interval.Interval(min(left_qs), max(left_qs))                    
+            left_feature_interval = interval.Interval(min(left_qs), max(left_qs))
 
             right_qs = self.q_to_feature_offset(right_al, right_feature_name)
-            right_feature_interval = interval.Interval(min(right_qs), max(right_qs))                    
+            right_feature_interval = interval.Interval(min(right_qs), max(right_qs))
 
             # Heuristic: if an optimal switch point occurs in the shared feature,
             # any amount of sequence past the shared feature is enough.
-            # If the optimal switch point is outside, require a longer amount. 
+            # If the optimal switch point is outside, require a longer amount.
             # Motivation: for replacement edits in which pegRNA sequence is similar
             # to genomic sequence, we want to avoid identifying false positive
             # extension alignments that are actually just genomic sequence, while
-            # still allowing the possibility of partial replacements that retain 
+            # still allowing the possibility of partial replacements that retain
             # some genomic sequence after the transition.
 
             switch_in_shared = switch_interval & left_feature_interval
@@ -197,7 +197,7 @@ class Categorizer:
 
             if (switch_in_shared and left_contribution_past_overlap.total_length > 0) or (left_contribution_past_overlap.total_length >= 10) or both_reach_ref_end:
                 cropped_left_al = sam.crop_al_to_query_int(left_al, 0, switch_interval.end)
-            
+
                 # Similarly, if as much query as possible is attributed to the left al, does the remaining right al
                 # still explain part of the read to the right of the overlapping feature?
 
@@ -240,7 +240,7 @@ class Categorizer:
         Motivation: if a potential transition occurs close to the end of a read or otherwise
         only involves a small amount of sequence past the transition, initial alignment
         generation may fail to identify a potentially relevant alignment.
-        ''' 
+        '''
 
         ti = self.target_info
 
@@ -498,7 +498,7 @@ class Layout(Categorizer):
                 # Only add the new alignment if it explains a substantial new amount of the read.
                 if new_covered.total_length > 10:
                     processed_als.append(edge_al)
-        
+
         return processed_als
 
     @memoized_property
@@ -514,7 +514,7 @@ class Layout(Categorizer):
             processed_als.extend(split_als)
 
         return processed_als
-    
+
     @memoized_property
     def nonhomologous_donor_alignments(self):
         if self.target_info.nonhomologous_donor is None:
@@ -546,7 +546,7 @@ class Layout(Categorizer):
     @memoized_property
     def alignments(self):
         return self.target_alignments + self.donor_alignments
-    
+
     @memoized_property
     def supplemental_alignments(self):
         als = [al for al in self.original_alignments if al.reference_name not in self.target_info.reference_sequences]
@@ -659,13 +659,13 @@ class Layout(Categorizer):
         self.details = 'n/a'
 
         self.relevant_alignments = interval.make_parsimonious(self.parsimonious_target_alignments + self.nonspecific_amplification)
-    
+
     def categorize(self):
         if self.target_info.donor is None and self.target_info.nonhomologous_donor is None:
            c, s, d = self.categorize_no_donor()
         else:
             c, s, d = self.categorize_with_donor()
-        
+
         if self.strand == '-':
             self.relevant_alignments = [sam.flip_alignment(al) for al in self.relevant_alignments]
 
@@ -674,7 +674,7 @@ class Layout(Categorizer):
     def categorize_with_donor(self):
         self.details = 'n/a'
         self.outcome = knock_knock.outcome.Outcome('')
-        
+
         if self.seq is None or len(self.seq) <= self.target_info.combined_primer_length + 10:
             self.category = 'malformed layout'
             self.subcategory = 'too short'
@@ -699,7 +699,7 @@ class Layout(Categorizer):
             self.category = 'malformed layout'
             self.subcategory = 'primers not in same orientation'
             self.relevant_alignments = self.uncategorized_relevant_alignments
-        
+
         elif not self.primer_alignments_reach_edges:
             self.category = 'malformed layout'
             self.subcategory = 'primer far from read edge'
@@ -787,7 +787,7 @@ class Layout(Categorizer):
                     self.details = 'n/a'
 
                 self.relevant_alignments = self.parsimonious_and_gap_alignments
-        
+
         # TODO: check here for HA extensions into donor specific
         elif self.gap_covered_by_target_alignment:
             self.category = 'complex indel'
@@ -825,7 +825,7 @@ class Layout(Categorizer):
             NH_strand = sam.get_strand(NH_al)
             MH_nts = self.NH_donor_microhomology
             self.details = f'{NH_strand},{MH_nts[5]},{MH_nts[3]}'
-            
+
             self.relevant_alignments = self.parsimonious_target_alignments + self.nonhomologous_donor_alignments
 
         elif self.nonspecific_amplification is not None:
@@ -838,9 +838,9 @@ class Layout(Categorizer):
             self.category = 'non-homologous donor'
             self.subcategory = 'complex'
             self.details = 'n/a'
-            
+
             self.relevant_alignments = self.parsimonious_target_alignments + self.nonhomologous_donor_alignments + self.nonredundant_supplemental_alignments
-        
+
         elif self.any_donor_specific_present:
             self.category = 'complex misintegration'
             self.subcategory = 'complex misintegration'
@@ -857,7 +857,7 @@ class Layout(Categorizer):
             print(self.integration_summary)
 
         return self.category, self.subcategory, self.details
-    
+
     def categorize_no_donor(self):
         self.details = 'n/a'
 
@@ -885,7 +885,7 @@ class Layout(Categorizer):
             self.category = 'malformed layout'
             self.subcategory = 'primers not in same orientation'
             self.relevant_alignments = self.uncategorized_relevant_alignments
-        
+
         elif not self.primer_alignments_reach_edges:
             self.category = 'malformed layout'
             self.subcategory = 'primer far from read edge'
@@ -925,7 +925,7 @@ class Layout(Categorizer):
                 self.category = 'WT'
                 self.subcategory = 'WT'
                 self.relevant_alignments = self.parsimonious_target_alignments
-        
+
         elif self.nonspecific_amplification is not None:
             self.register_nonspecific_amplification()
 
@@ -938,14 +938,14 @@ class Layout(Categorizer):
             self.details = 'n/a'
 
         return self.category, self.subcategory, self.details
-    
+
     @memoized_property
     def read(self):
         if self.seq is None:
             return None
         else:
             return fastq.Read(self.name, self.seq, fastq.encode_sanger(self.qual))
-    
+
     def realign_edges_to_primers(self, read_side):
         if self.seq is None:
             return []
@@ -992,7 +992,7 @@ class Layout(Categorizer):
                                 min_score_ratio=0,
                                )
 
-            # The fixed edge alignment strategy used can produce alignments that start or 
+            # The fixed edge alignment strategy used can produce alignments that start or
             # end with a deletion. Remove these.
             als = [sam.remove_terminal_deletions(al) for al in als]
 
@@ -1038,7 +1038,7 @@ class Layout(Categorizer):
             edge_al = None
         else:
             edge_al = edge_als[0][1]
-            
+
         return edge_al
 
     @memoized_property
@@ -1097,9 +1097,9 @@ class Layout(Categorizer):
         ti = self.target_info
 
         gap_covers = []
-        
+
         target_interval = ti.amplicon_interval
-        
+
         for gap in self.not_covered_by_initial_alignments:
             if gap.total_length == 1:
                 continue
@@ -1121,7 +1121,7 @@ class Layout(Categorizer):
                                )
 
             als = [sw.extend_alignment(al, ti.reference_sequence_bytes[ti.target]) for al in als]
-            
+
             gap_covers.extend(als)
 
             if ti.donor is not None:
@@ -1137,7 +1137,7 @@ class Layout(Categorizer):
                                 )
 
                 als = [sw.extend_alignment(al, ti.reference_sequence_bytes[ti.donor]) for al in als]
-                
+
                 gap_covers.extend(als)
 
         return gap_covers
@@ -1165,12 +1165,12 @@ class Layout(Categorizer):
     def extra_copy_of_primer(self):
         ''' Check if too many alignments containing either primer were found. '''
         return any(len(als) > 1 for side, als in self.all_primer_alignments.items())
-    
+
     @memoized_property
     def missing_a_primer(self):
         ''' Check if either primer was not found in an alignments. '''
         return any(len(als) == 0 for side, als in self.all_primer_alignments.items())
-        
+
     @memoized_property
     def primer_alignments(self):
         ''' Get the single alignment containing each primer. '''
@@ -1180,7 +1180,7 @@ class Layout(Categorizer):
                 primer_als[side] = self.all_primer_alignments[side][0]
 
         return primer_als
-        
+
     @memoized_property
     def primer_strands(self):
         ''' Get which strand each primer-containing alignment mapped to. '''
@@ -1190,7 +1190,7 @@ class Layout(Categorizer):
             if al is not None:
                 strands[side] = sam.get_strand(al)
         return strands
-    
+
     @memoized_property
     def strand(self):
         ''' Get the single strand any primer-containing alignments mapped to. '''
@@ -1239,7 +1239,7 @@ class Layout(Categorizer):
         primer = self.target_info.primers_by_side_of_read[side]
         num_overlapping_bases = al.get_overlap(primer.start, primer.end + 1)
         overlaps = num_overlapping_bases > 0
-        correct_strand = sam.get_strand(al) == self.target_info.sequencing_direction 
+        correct_strand = sam.get_strand(al) == self.target_info.sequencing_direction
 
         return overlaps and (correct_strand or not require_correct_strand)
 
@@ -1257,6 +1257,8 @@ class Layout(Categorizer):
         primer_als = self.primer_alignments
         ref_seqs = self.target_info.reference_sequences
 
+        print(self.target_info)
+        exit()
         if len(self.target_info.sgRNAs) <= 1:
             if primer_als[5] is not None and primer_als[3] is not None:
                 merged = sam.merge_adjacent_alignments(primer_als[5], primer_als[3], ref_seqs)
@@ -1264,7 +1266,7 @@ class Layout(Categorizer):
                 merged = None
         else:
             # If there is a single target alignment that reaches both primers (after splitting),
-            # use it to avoid edge cases. 
+            # use it to avoid edge cases.
             merged = None
             for al in self.parsimonious_target_alignments:
                 if all(self.overlaps_primer(al, side, False) for side in ['left', 'right']):
@@ -1282,7 +1284,7 @@ class Layout(Categorizer):
                         merged = None
 
         return merged
-    
+
     @memoized_property
     def has_integration(self):
         covered = self.covered_by_primers_alignments
@@ -1387,7 +1389,7 @@ class Layout(Categorizer):
             largest = None
 
         return largest
-    
+
     @memoized_property
     def indel_string(self):
         if self.indel_near_cut is None:
@@ -1479,12 +1481,12 @@ class Layout(Categorizer):
             5: sam.crop_al_to_ref_int(closest_donor[5], HAs[5]['donor'].end + 1, np.inf),
             3: sam.crop_al_to_ref_int(closest_donor[3], 0, HAs[3]['donor'].start - 1),
         }
-        
+
         donor_past_HA_length = {
             side: donor_past_HA[side].query_alignment_length if donor_past_HA[side] is not None else 0
             for side in [5, 3]
         }
-        
+
         donor_past_HA_edit_distance = {
             side: sam.total_edit_distance(donor_past_HA[side], self.target_info.donor_sequence)
             for side in [5, 3]
@@ -1501,14 +1503,14 @@ class Layout(Categorizer):
                   (donor_matches_past_HA[side] >= 5 or (donor_past_HA_length[side] >= 2 and donor_past_HA_edit_distance[side] == 0))
             for side in [5, 3]
         }
-            
+
         target_external_edge_query = {
             5: (sam.closest_query_position(HAs[5]['target'].start, from_primer[5])
                 if from_primer[5] is not None else None),
             3: (sam.closest_query_position(HAs[3]['target'].end, from_primer[3])
                 if from_primer[3] is not None else None),
         }
-        
+
         donor_external_edge_query = {
             5: sam.closest_query_position(HAs[5]['donor'].start, closest_donor[5]),
             3: sam.closest_query_position(HAs[3]['donor'].end, closest_donor[3]),
@@ -1540,7 +1542,7 @@ class Layout(Categorizer):
             )
 
         return clean_handoff
-    
+
     @memoized_property
     def edge_q(self):
         ''' Where in the query are the edges of the integration? '''
@@ -1609,7 +1611,7 @@ class Layout(Categorizer):
         }
 
         return relative_to_arm
-    
+
     @memoized_property
     def donor_relative_to_cut(self):
         ''' Distance on query between base aligned to donor before/after cut
@@ -1668,7 +1670,7 @@ class Layout(Categorizer):
         full_HA = {}
         for side in [5, 3]:
             offset = self.donor_relative_to_arm['external'][side]
-            
+
             full_HA[side] = offset is not None and offset >= 0
 
         return full_HA
@@ -1749,7 +1751,7 @@ class Layout(Categorizer):
             raise ValueError
 
         gap = between_primers - left_covered - right_covered
-        
+
         return gap
 
     @memoized_property
@@ -1777,7 +1779,7 @@ class Layout(Categorizer):
                 per_side[side] = 'imperfect'
 
         return per_side
-                
+
     @memoized_property
     def junction_summary(self):
         per_side = self.junction_summary_per_side
@@ -1791,12 +1793,12 @@ class Layout(Categorizer):
               per_side[3] == 'HDR'):
 
             summary = "5' blunt"
-        
+
         elif (per_side[5] == 'HDR' and
               per_side[3] == 'blunt'):
 
             summary = "3' blunt"
-        
+
         elif (per_side[5] == 'blunt' and
               per_side[3] == 'blunt'):
 
@@ -1859,7 +1861,7 @@ class Layout(Categorizer):
                 summary = 'other'
 
         return summary
-    
+
     @memoized_property
     def cleanly_concatanated_donors(self):
         ti = self.target_info
@@ -1893,7 +1895,7 @@ class Layout(Categorizer):
             overlap_slightly = len(before_int & after_int) <= 2
 
             missing_before = len(ti.donor_sequence) - before.reference_end
-            missing_after = after.reference_start 
+            missing_after = after.reference_start
 
             clean = (adjacent or overlap_slightly) and (missing_before <= 1) and (missing_after <= 1)
 
@@ -1903,7 +1905,7 @@ class Layout(Categorizer):
             return len(junctions_clean) + 1
         else:
             return 0
-    
+
     @memoized_property
     def indels(self):
         indels = []
@@ -1926,7 +1928,7 @@ class Layout(Categorizer):
                     insertion = al.query_sequence[read_nucs_before:read_nucs_before + length]
 
                     indel = DegenerateInsertion([starts_after], [insertion])
-                    
+
                 else:
                     continue
 
@@ -1937,7 +1939,7 @@ class Layout(Categorizer):
     @memoized_property
     def genomic_insertion(self):
         min_gap_length = 20
-        
+
         covered_by_normal = interval.get_disjoint_covered(self.alignments)
         unexplained_gaps = self.whole_read - covered_by_normal
 
@@ -1959,7 +1961,7 @@ class Layout(Categorizer):
                     error_rate = edit_distance / len(gap)
                     if error_rate < 0.1:
                         covering_als.append(al)
-                    
+
             if len(covering_als) == 0:
                 covering_als = None
 
@@ -2018,7 +2020,7 @@ class Layout(Categorizer):
             'h': None,
             'nh': None,
         }
-        
+
         if self.strand == '+':
             primer_al = self.primer_alignments[5]
         elif self.strand == '-':
@@ -2044,13 +2046,13 @@ class Layout(Categorizer):
         else:
             kind = 'nonspecific_amplification'
             primer_interval = self.just_primer_interval['left']
-            
+
         need_to_cover = self.whole_read - primer_interval
         covering_als = []
         for supp_al in self.supplemental_alignments:
             if (need_to_cover - interval.get_covered(supp_al)).total_length <= 10:
                 covering_als.append(supp_al)
-                
+
         if covering_als:
             all_covering_als[kind] = covering_als
 
@@ -2058,7 +2060,7 @@ class Layout(Categorizer):
 
         primer_interval = interval.get_covered(primer_al)
         primer_interval.start = 0
-            
+
         need_to_cover = self.whole_read - primer_interval
         for kind, all_als in [('h', self.parsimonious_donor_alignments),
                               ('nh', self.nonhomologous_donor_alignments),
@@ -2067,17 +2069,17 @@ class Layout(Categorizer):
             for al in all_als:
                 if (need_to_cover - interval.get_covered(al)).total_length <= 10:
                     covering_als.append(al)
-                
+
             if covering_als:
                 all_covering_als[kind] = covering_als
 
         return all_covering_als
-    
+
     @memoized_property
     def nonhomologous_donor_integration_alignments(self):
         min_gap_length = 10
         gap = self.gap_between_primer_alignments
-        
+
         covered_by_normal = interval.get_disjoint_covered(self.alignments)
         unexplained_gap = gap - covered_by_normal
 
@@ -2094,10 +2096,10 @@ class Layout(Categorizer):
                 covered = interval.get_covered(al)
                 if (gap - covered).total_length <= 2:
                     full_covering_als.append(al)
-                
+
                 if (covered & unexplained_gap).total_length >= 2:
                     partial_covering_als.append(al)
-                    
+
             return full_covering_als, partial_covering_als
 
     @memoized_property
@@ -2193,7 +2195,7 @@ class Layout(Categorizer):
         primer_interval = self.just_primer_interval
 
         # If alignments from the primers extend substantially into the read,
-        # don't consider this nonspecific amplification. 
+        # don't consider this nonspecific amplification.
 
         if not_primer_length['left'] >= 20 or not_primer_length['right'] >= 20:
             return None
@@ -2205,12 +2207,12 @@ class Layout(Categorizer):
             covered = interval.get_covered(al)
             if len(need_to_cover - covered) < 10:
                 covering_als.append(al)
-                
+
         if len(covering_als) == 0:
             covering_als = None
         else:
             covering_als = interval.make_parsimonious(covering_als)
-            
+
         return covering_als
 
     @memoized_property
@@ -2251,7 +2253,7 @@ class Layout(Categorizer):
             donor_al = self.parsimonious_donor_alignments[0]
         else:
             donor_al = None
-            
+
         MH_nts = {side: junction_microhomology(self.target_info.reference_sequences, self.primer_alignments[side], donor_al) for side in [5, 3]}
 
         return MH_nts
@@ -2276,7 +2278,7 @@ class NonoverlappingPairLayout():
         }
         if self.layouts['R1'].name != self.layouts['R2'].name:
             raise ValueError
-        
+
         self.name = self.layouts['R1'].name
         self.query_name = self.name
 
@@ -2286,7 +2288,7 @@ class NonoverlappingPairLayout():
             'h': {'R1': None, 'R2': None},
             'nh': {'R1': None, 'R2': None},
         }
-        
+
         for which in ['R1', 'R2']:
             if self.layouts[which].has_integration:
                 for kind in ['h', 'nh']:
@@ -2295,7 +2297,7 @@ class NonoverlappingPairLayout():
                         bridging_als[kind][which] = als[0]
 
         bridging_als.update(self.best_genomic_al_pairs)
-        
+
         return bridging_als
 
     @memoized_property
@@ -2329,11 +2331,11 @@ class NonoverlappingPairLayout():
         best_pairs = {}
         for kind in ['nonspecific_amplification', 'genomic_insertion']:
             best_pairs[kind] = {'R1': None, 'R2': None}
-            
+
             als = {which: self.layouts[which].one_sided_covering_als[kind] for which in ['R1', 'R2']}
             if als['R1'] is None or als['R2'] is None:
                 continue
-                
+
             valid_pairs = {}
             for R1_al, R2_al in itertools.product(als['R1'], als['R2']):
                 if R1_al.reference_name != R2_al.reference_name:
@@ -2361,7 +2363,7 @@ class NonoverlappingPairLayout():
                 length = min(valid_pairs)
 
                 best_pairs[kind] = valid_pairs[length]
-                
+
         return best_pairs
 
     def register_genomic_insertion(self):
@@ -2472,7 +2474,7 @@ class NonoverlappingPairLayout():
         strand = {}
         for kind in self.bridging_alignments:
             strand[kind] = None
-            
+
             als = self.bridging_alignments[kind]
             if als['R1'] is None or als['R2'] is None:
                 continue
@@ -2490,12 +2492,12 @@ class NonoverlappingPairLayout():
     @memoized_property
     def successful_bridging_kind(self):
         successful = set()
-        
+
         for kind in self.bridging_alignments:
             if self.bridging_strand[kind] is not None and self.bridging_als_reach_internal_edges[kind]:
                 successful.add(kind)
 
-                
+
         if len(successful) == 0:
             return None
         elif len(successful) > 1:
@@ -2505,13 +2507,13 @@ class NonoverlappingPairLayout():
                 raise ValueError(self.name, successful)
         else:
             return successful.pop()
-    
+
     @memoized_property
     def gap(self):
         kind = self.successful_bridging_kind
         if kind is None:
             return 100
-        
+
         als = self.bridging_alignments[kind]
         unaligned_gap = sum(self.bridging_als_missing_from_end[kind].values())
         if self.bridging_strand[kind] == '+':
@@ -2571,7 +2573,7 @@ class NonoverlappingPairLayout():
                 'R1': self.layouts['R1'].parsimonious_target_alignments + self.layouts['R1'].nonhomologous_donor_alignments,
                 'R2': self.layouts['R2'].parsimonious_target_alignments + self.layouts['R2'].nonhomologous_donor_alignments,
             }
-            
+
         elif kind == 'nonspecific_amplification' and self.possible_inferred_amplicon_length > 0:
             R1_primer = self.layouts['R1'].primer_alignments[5]
             R2_primer = self.layouts['R2'].primer_alignments[3]
@@ -2593,7 +2595,7 @@ class NonoverlappingPairLayout():
                 self.subcategory = 'non-overlapping'
                 self.details = 'n/a'
                 self.relevant_alignments = self.uncategorized_relevant_alignments
-        
+
         elif kind == 'genomic_insertion' and self.possible_inferred_amplicon_length > 0:
             R1_primer = self.layouts['R1'].primer_alignments[5]
             R2_primer = self.layouts['R2'].primer_alignments[3]
@@ -2614,22 +2616,22 @@ class NonoverlappingPairLayout():
                 self.subcategory = 'non-overlapping'
                 self.details = 'n/a'
                 self.relevant_alignments = self.uncategorized_relevant_alignments
-            
+
         else:
             self.inferred_amplicon_length = -1
             self.category = 'bad sequence'
             self.subcategory = 'non-overlapping'
             self.details = 'n/a'
             self.relevant_alignments = self.uncategorized_relevant_alignments
-        
+
         #if self.strand == '-':
         #    self.relevant_alignments = {
         #        'R1': self.relevant_alignments['R2'],
         #        'R2': self.relevant_alignments['R1'],
         #    }
-            
+
         return self.category, self.subcategory, self.details
-    
+
 def max_del_nearby(alignment, ref_pos, window):
     ref_pos_to_block = sam.get_ref_pos_to_block(alignment)
     nearby = range(ref_pos - window, ref_pos + window)
@@ -2668,7 +2670,7 @@ def get_mismatch_info(alignment, reference_sequences):
             if read_p != None and ref_p != None:
                 read_b = alignment.query_sequence[read_p]
                 ref_b = reference[ref_p]
-                
+
                 tuples.append((read_p, read_b, ref_p, ref_b))
 
     for read_p, read_b, ref_p, ref_b in tuples:
@@ -2712,10 +2714,10 @@ def get_indel_info(alignment):
 
 def edit_positions(al, reference_sequences, use_deletion_length=False):
     bad_read_ps = np.zeros(al.query_length)
-    
+
     for read_p, *rest in get_mismatch_info(al, reference_sequences):
         bad_read_ps[read_p] += 1
-        
+
     for indel_type, indel_info in get_indel_info(al):
         if indel_type == 'deletion':
             centered_at, length = indel_info
@@ -2730,16 +2732,16 @@ def edit_positions(al, reference_sequences, use_deletion_length=False):
             # TODO: double-check possible off by one in ends_at
             for read_p in range(starts_at, ends_at + 1):
                 bad_read_ps[read_p] += 1
-               
+
     return bad_read_ps
 
 def split_at_edit_clusters(al, reference_sequences, num_edits=5, window_size=11):
-    ''' Identify read locations at which there are at least num_edits edits in a windows_size nt window. 
+    ''' Identify read locations at which there are at least num_edits edits in a windows_size nt window.
     Excise outwards from any such location until reaching a stretch of 5 exact matches.
     Remove the excised region, producing new cropped alignments.
     '''
     split_als = []
-    
+
     bad_read_ps = edit_positions(al, reference_sequences)
     rolling_sums = pd.Series(bad_read_ps).rolling(window=window_size, center=True, min_periods=1).sum()
 
@@ -2749,21 +2751,21 @@ def split_at_edit_clusters(al, reference_sequences, num_edits=5, window_size=11)
         split_als.append(al)
     else:
         last_read_p_in_before = None
-    
+
         window_edge = argmax
         for window_edge in range(argmax, -1, -1):
             errors_in_window_before = sum(bad_read_ps[window_edge + 1 - 5:window_edge + 1])
             if errors_in_window_before == 0:
                 last_read_p_in_before = window_edge
                 break
-            
+
         if last_read_p_in_before is not None:
             cropped_before = sam.crop_al_to_query_int(al, 0, last_read_p_in_before)
             if cropped_before is not None:
                 split_als.extend(split_at_edit_clusters(cropped_before, reference_sequences))
 
         first_read_p_in_after = None
-            
+
         window_edge = argmax
         for window_edge in range(argmax, al.query_length):
             errors_in_window_after = sum(bad_read_ps[window_edge:window_edge + 5])
@@ -2791,7 +2793,7 @@ def crop_terminal_mismatches(al, reference_sequences):
 
     while first in mismatch_ps:
         first += 1
-        
+
     while last in mismatch_ps:
         last -= 1
 
@@ -2809,7 +2811,7 @@ def comprehensively_split_alignment(al, target_info, mode, ins_size_to_split_at=
     if mode == 'illumina':
         if ins_size_to_split_at is None:
             ins_size_to_split_at = 3
-        
+
         if del_size_to_split_at is None:
             del_size_to_split_at = 1
 
@@ -2826,7 +2828,7 @@ def comprehensively_split_alignment(al, target_info, mode, ins_size_to_split_at=
 
         if ins_size_to_split_at is None:
             ins_size_to_split_at = 5
-        
+
         if del_size_to_split_at is None:
             del_size_to_split_at = 3
 
@@ -2857,9 +2859,9 @@ def junction_microhomology(reference_sequences, first_al, second_al):
         'first': first_al,
         'second': second_al,
     }
-    
+
     covered_by_order = {order: interval.get_covered(al) for order, al in als_by_order.items()}
-    
+
     side_to_order = {
         'left': min(covered_by_order, key=covered_by_order.get),
         'right': max(covered_by_order, key=covered_by_order.get),
@@ -2867,7 +2869,7 @@ def junction_microhomology(reference_sequences, first_al, second_al):
 
     covered_by_side = {side: covered_by_order[order] for side, order in side_to_order.items()}
     als_by_side = {side: als_by_order[order] for side, order in side_to_order.items()}
-    
+
     initial_overlap = covered_by_side['left'] & covered_by_side['right']
 
     if initial_overlap:
@@ -2922,7 +2924,7 @@ def junction_microhomology(reference_sequences, first_al, second_al):
     if interval.are_disjoint(covered_by_side_trimmed['left'], covered_by_side_trimmed['right']):
         gap = covered_by_side_trimmed['right'].start - covered_by_side_trimmed['left'].end - 1
         MH_nts = -gap
-    else:   
+    else:
         overlap = covered_by_side_trimmed['left'] & covered_by_side_trimmed['right']
 
         MH_nts = overlap.total_length
