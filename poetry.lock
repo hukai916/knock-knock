@@ -499,30 +499,30 @@ files = [
 numpy = ">=1.14.5"
 
 [[package]]
-name = "hits"
-version = "0.3.3"
-description = "utilities for processing high-throughput sequencing experiments"
+name = "hits-x"
+version = "0.1.1"
+description = "Updated and modified from Jeff's version."
 category = "main"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8,<4.0"
 files = [
-    {file = "hits-0.3.3.tar.gz", hash = "sha256:c20f4dd629337bff6cf8d231768b980f6ecda2590602a4d309be3685bf9973e6"},
+    {file = "hits_x-0.1.1-py3-none-any.whl", hash = "sha256:15ea099c34748cce8b957fa032666a9b73541396d6aa10a7d9fecc57ad1cb94e"},
+    {file = "hits_x-0.1.1.tar.gz", hash = "sha256:072fe5567eac2771f4220a3405a709634ff37f551ed47582cb190c49407ae7cd"},
 ]
 
 [package.dependencies]
-biopython = ">=1.72"
-bokeh = ">=2.4.2"
-ipython = ">=7.8.0"
-ipywidgets = ">=7.4.2"
-matplotlib = ">=3.0.2"
-numpy = ">=1.15.4"
-pandas = ">=0.23.4"
-pillow = ">=5.3.0"
-pysam = ">=0.15.1"
-pyyaml = ">=3.13"
-scipy = ">=1.2.1"
-seaborn = ">=0.11.0"
-statsmodels = ">=0.12.1"
+biopython = ">=1.81,<2.0"
+bokeh = ">=3.0.3,<4.0.0"
+ipython = ">=8.10.0,<9.0.0"
+ipywidgets = ">=8.0.4,<9.0.0"
+matplotlib = ">=3.7.0,<4.0.0"
+numpy = ">=1.24.2,<2.0.0"
+pandas = ">=1.5.3,<2.0.0"
+Pillow = ">=9.4.0,<10.0.0"
+pysam = ">=0.20.0,<0.21.0"
+pyyaml = ">=6.0,<7.0"
+seaborn = ">=0.12.2,<0.13.0"
+statsmodels = ">=0.13.5,<0.14.0"
 
 [[package]]
 name = "importlib-metadata"
@@ -2107,4 +2107,4 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "abe5da38370dc055001d20a84f48458785f6e1bb6b75d4b8bbd38e03f56c69dc"
+content-hash = "4ba37e6b172f9cea6ed04c8a9dcbb9526dfce3e7712720f82f26201b5965d89f"
